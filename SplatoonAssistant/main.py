@@ -18,8 +18,6 @@ intents = discord.Intents.default()
 intents.members = True          # ユーザー選択に必要
 bot = commands.Bot(command_prefix='!', intents=intents) 
 
-# 選択されたメンバーリストを保存するためのグローバル変数
-selected_members = []
 # ブキデータを保存するためのグローバル変数
 weapon_data = {}
 
@@ -49,7 +47,7 @@ async def on_ready():
 @bot.tree.command(name='team', description="ランダムにチーム分けを行います")
 async def random_assign_command(interaction: discord.Interaction):
     start_time = datetime.now().strftime("%Y/%m/%d %H:%M")
-    member_view = MemberSelectView(start_time)
+    member_view = MemberSelectView(start_time=start_time)
     await interaction.response.send_message(
         embed=member_view.init_embed,
         view=member_view
