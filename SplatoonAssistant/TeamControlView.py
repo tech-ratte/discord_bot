@@ -8,13 +8,21 @@ from discord.ui import View, Button
 class TeamControlView(View):
 
 
-    def __init__(self, members, start_time, count):
+    def __init__(self, start_time, count, record, members):
         super().__init__(timeout=900)
 
-        self.members = members
         self.start_time = start_time
         self.count = count
+        self.record = record
+        self.members = members
 
+        # レコードに無いメンバーを追加
+        for selected_name in members:
+            if not any(r.name == selected_name for r in self.record):
+                self.record.append(MemberRecord(selected_name))
+
+        for r in self.record:
+            print(r)
         self.current_embed = None
         self.update_teams()
 
@@ -25,17 +33,17 @@ class TeamControlView(View):
         # ランダムにシャッフル
         random.shuffle(members_to_split)
         # チーム分け
-        spectator = []
+        self.spectator = []
         if len(members_to_split) > 8:
-            spectator = members_to_split[8:]
+            self.spectator = members_to_split[8:]
             members_to_split = members_to_split[:8]
         team_size = len(members_to_split) // 2
-        team_alpha = members_to_split[team_size:]
-        team_beta = members_to_split[:team_size]
+        self.team_alpha = members_to_split[team_size:]
+        self.team_beta = members_to_split[:team_size]
         # メンションを作成して送信
-        mentions_alpha = "\n".join(member.mention for member in team_alpha)
-        mentions_beta = "\n".join(member.mention for member in team_beta)
-        mentions_spectator = "\n".join(member.mention for member in spectator)
+        mentions_alpha = "\n".join(member.mention for member in self.team_alpha)
+        mentions_beta = "\n".join(member.mention for member in self.team_beta)
+        mentions_spectator = "\n".join(member.name.mention for member in self.spectator)
         # Embedの作成
         embed = discord.Embed(
             title="🔶 チーム編成",
@@ -67,7 +75,7 @@ class TeamControlView(View):
     async def reselection_button(self, interaction: discord.Interaction, button: Button):
         await interaction.response.defer()
         from MemberSelectView import MemberSelectView
-        member_view = MemberSelectView(self.start_time, self.count)
+        member_view = MemberSelectView(self.start_time, self.count, self.record)
         await interaction.edit_original_response(
             embed=member_view.init_embed,
             view=member_view
@@ -79,7 +87,15 @@ class TeamControlView(View):
     async def buttle_button(self, interaction: discord.Interaction, button: Button):
         await interaction.response.defer()
         from ButtleView import ButtleView
-        buttle_view = ButtleView(self.members, self.start_time, self.count, self.current_embed)
+        buttle_view = ButtleView(
+            self.start_time, 
+            self.count, 
+            self.current_embed, 
+            self.record, 
+            self.team_alpha, 
+            self.team_beta, 
+            self.spectator
+        )
         await interaction.edit_original_response(
             embed=buttle_view.init_view,
             view=buttle_view
@@ -104,3 +120,24 @@ class TeamControlView(View):
     #         embed=self.current_embed,
     #         view=self
     #     )
+
+
+# メンバーの戦績を定義するクラス
+class MemberRecord:
+    def __init__(self, name):
+        self.name = name
+        self.win = 0
+        self.num = 0
+
+    def record_win(self):
+        self.win += 1
+        self.num += 1
+
+    def record_lose(self):
+        self.num += 1
+
+    def __str__(self):
+        rate = 0.0
+        if self.win != 0:
+            rate = self.win/self.num * 100
+        return f"{self.name}: {self.win}勝/{self.num}試合 (勝率: {rate:.2f}%)"

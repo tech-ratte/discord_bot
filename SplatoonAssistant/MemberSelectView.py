@@ -8,12 +8,13 @@ class MemberSelectView(View):
 
 
     # タイムアウト時間など、Viewの基本設定をここに書く
-    def __init__(self, start_time, count=1):
+    def __init__(self, start_time, count=1, record=[]):
         super().__init__(timeout=180)
 
-        # 日付と試合回数
+        # 日付と試合回数と戦績
         self.start_time = start_time
         self.count = count
+        self.record = record
         # Embedの作成
         self.init_embed = discord.Embed(
             title="👥 メンバー選択",
@@ -31,8 +32,7 @@ class MemberSelectView(View):
     )
     async def select_callback(self, interaction: discord.Interaction, select: UserSelect):
         # 選択完了時の処理
-        selected_members = select.values
-        team_view = TeamControlView(selected_members, self.start_time, self.count)
+        team_view = TeamControlView(self.start_time, self.count, self.record, select.values)
         await interaction.response.edit_message(
             embed=team_view.current_embed,
             view=team_view
