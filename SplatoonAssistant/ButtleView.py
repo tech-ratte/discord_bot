@@ -138,26 +138,24 @@ class CautionView(View):
         await interaction.response.defer()
         # レコードを更新して「チーム編成」へ
         from TeamControlView import TeamControlView
-        # 勝者
+        # カウント増加
+        if self.win_team is not None:
+            self.count += 1
+        # 勝利チーム判定
         win_members = []
+        lose_members = []
         if self.win_team == "alpha":
             win_members = self.alpha
+            lose_members = self.beta
         elif self.win_team == "beta":
             win_members = self.beta
-        # 無効試合でなければ
-        if self.win_team is not None:
-            # カウント増加
-            self.count += 1
-            # レコード更新
-            for r in self.record:
-                lose = True
-                for winner in win_members:
-                    if r.name == winner:
-                        r.record_win()
-                        lose = False
-                        break
-                if lose:
-                    r.record_lose()
+            lose_members = self.alpha
+        # レコード更新
+        for r in self.record:
+            if r.name in win_members:
+                r.record_win()
+            if r.name in lose_members:
+                r.record_lose()
         members = self.alpha + self.beta + self.spec
         team_view = TeamControlView(self.start_time, self.count, self.record, members)
         await interaction.edit_original_response(
