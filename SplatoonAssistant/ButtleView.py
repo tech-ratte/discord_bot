@@ -6,9 +6,8 @@ from discord.ui import View, Button
 # 勝利判定を定義する View クラス
 class ButtleView(View):
 
-
     def __init__(self, start_time, count, embed, record, alpha, beta, spec):
-        super().__init__(timeout=900)
+        super().__init__(timeout=None)
 
         self.start_time = start_time
         self.count = count
@@ -22,72 +21,73 @@ class ButtleView(View):
         embed.set_footer(text=f"勝利チームはどちらですか？")
         self.init_view = embed
 
-
     # 「アルファチーム」ボタンの定義
-    @discord.ui.button(label="アルファチーム", style=discord.ButtonStyle.primary, emoji="🟨")
+    @discord.ui.button(
+        label="アルファチーム", style=discord.ButtonStyle.primary, emoji="🟨"
+    )
     async def alpha_button(self, interaction: discord.Interaction, button: Button):
         await interaction.response.defer()
         caution_view = CautionView(
-            self.start_time, 
-            self.count, 
-            self.init_view, 
-            self.record, 
-            self.alpha, 
-            self.beta, 
-            self.spec, 
-            "alpha"
+            self.start_time,
+            self.count,
+            self.init_view,
+            self.record,
+            self.alpha,
+            self.beta,
+            self.spec,
+            "alpha",
         )
         await interaction.edit_original_response(
-            embed=caution_view.init_embed,
-            view=caution_view
+            embed=caution_view.init_embed, view=caution_view
         )
 
-        
     # 「ブラボーチーム」ボタンの定義
-    @discord.ui.button(label="ブラボーチーム", style=discord.ButtonStyle.primary, emoji="🟦")
+    @discord.ui.button(
+        label="ブラボーチーム", style=discord.ButtonStyle.primary, emoji="🟦"
+    )
     async def beta_button(self, interaction: discord.Interaction, button: Button):
         await interaction.response.defer()
         caution_view = CautionView(
-            self.start_time, 
-            self.count, 
-            self.init_view, 
-            self.record, 
-            self.alpha, 
-            self.beta, 
-            self.spec, 
-            "beta", 
+            self.start_time,
+            self.count,
+            self.init_view,
+            self.record,
+            self.alpha,
+            self.beta,
+            self.spec,
+            "beta",
         )
         await interaction.edit_original_response(
-            embed=caution_view.init_embed,
-            view=caution_view
+            embed=caution_view.init_embed, view=caution_view
         )
 
-
     # 「無効試合」ボタンの定義
-    @discord.ui.button(label="無効試合", style=discord.ButtonStyle.secondary, emoji="❌")
+    @discord.ui.button(
+        label="無効試合", style=discord.ButtonStyle.secondary, emoji="❌"
+    )
     async def invalid_button(self, interaction: discord.Interaction, button: Button):
         await interaction.response.defer()
         caution_view = CautionView(
-            self.start_time, 
-            self.count, 
-            self.init_view, 
-            self.record, 
-            self.alpha, 
-            self.beta, 
-            self.spec
+            self.start_time,
+            self.count,
+            self.init_view,
+            self.record,
+            self.alpha,
+            self.beta,
+            self.spec,
         )
         await interaction.edit_original_response(
-            embed=caution_view.init_embed,
-            view=caution_view
+            embed=caution_view.init_embed, view=caution_view
         )
 
-        
+
 # 最終確認を定義する View クラス
 class CautionView(View):
 
-
-    def __init__(self, start_time, count, embed, record, alpha, beta ,spec, win_team=None):
-        super().__init__(timeout=900)
+    def __init__(
+        self, start_time, count, embed, record, alpha, beta, spec, win_team=None
+    ):
+        super().__init__(timeout=None)
 
         self.start_time = start_time
         self.count = count
@@ -108,9 +108,8 @@ class CautionView(View):
         self.init_embed = discord.Embed(
             title="⚠️ 確認",
             description=f"{info} で間違いないですか？",
-            color=discord.Color.red()
+            color=discord.Color.red(),
         )
-
 
     # 「いいえ」ボタンの定義
     @discord.ui.button(label="いいえ", style=discord.ButtonStyle.danger)
@@ -118,19 +117,17 @@ class CautionView(View):
         await interaction.response.defer()
         # 「試合中」に戻る
         buttle_view = ButtleView(
-            self.start_time, 
-            self.count, 
-            self.embed, 
-            self.record, 
-            self.alpha, 
-            self.beta, 
-            self.spec
+            self.start_time,
+            self.count,
+            self.embed,
+            self.record,
+            self.alpha,
+            self.beta,
+            self.spec,
         )
         await interaction.edit_original_response(
-            embed=buttle_view.init_view,
-            view=buttle_view
+            embed=buttle_view.init_view, view=buttle_view
         )
-
 
     # 「はい」ボタンの定義
     @discord.ui.button(label="はい", style=discord.ButtonStyle.success)
@@ -138,6 +135,7 @@ class CautionView(View):
         await interaction.response.defer()
         # レコードを更新して「チーム編成」へ
         from TeamControlView import TeamControlView
+
         # カウント増加
         if self.win_team is not None:
             self.count += 1
@@ -159,6 +157,5 @@ class CautionView(View):
         members = self.alpha + self.beta + self.spec
         team_view = TeamControlView(self.start_time, self.count, self.record, members)
         await interaction.edit_original_response(
-            embed=team_view.current_embed,
-            view=team_view
+            embed=team_view.current_embed, view=team_view
         )
