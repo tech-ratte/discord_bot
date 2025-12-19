@@ -124,7 +124,7 @@ class TeamControlView(View):
     async def confirm_button(self, interaction: discord.Interaction, button: Button):
         await interaction.response.defer()
         # 試合数が多い順、勝利数が多い順
-        sorted_record = sorted(self.record, key=lambda r: (-r.num, -r.win))
+        sorted_record = sorted(self.record, key=lambda r: (-r.total_num(), -r.total_win()))
         self.current_embed.title = f"🏆 {self.start_time.split()[0]}の戦績"
         self.current_embed.description = f"計{self.count-1}試合"
         self.current_embed.color = discord.Color.green()
@@ -134,9 +134,31 @@ class TeamControlView(View):
 
         self.current_embed.clear_fields()
         for sorted_r in sorted_record:
+            # 各モード別の集計と勝率を表示
+            adv_win = sorted_r.win_adv
+            adv_num = sorted_r.num_adv
+            dis_win = sorted_r.win_dis
+            dis_num = sorted_r.num_dis
+            even_win = sorted_r.win_even
+            even_num = sorted_r.num_even
+
+            def rate_str(w, n):
+                return f"{(w / n * 100):.2f}%" if n > 0 else "0.00%"
+
+            total_win = sorted_r.total_win()
+            total_num = sorted_r.total_num()
+            total_rate = sorted_r.total_rate()
+
+            value = (
+                f"人数有利：{adv_win}勝/{adv_num}試合 (勝率: {rate_str(adv_win, adv_num)})\n"
+                f"人数不利：{dis_win}勝/{dis_num}試合 (勝率: {rate_str(dis_win, dis_num)})\n"
+                f"同人数　：{even_win}勝/{even_num}試合 (勝率: {rate_str(even_win, even_num)})\n"
+                f"合計　　：{total_win}勝/{total_num}試合 (勝率: {total_rate:.2f}%)"
+            )
+
             self.current_embed.add_field(
                 name=sorted_r.name.mention,
-                value=f"{sorted_r.win}勝/{sorted_r.num}試合 (勝率: {sorted_r.win / sorted_r.num * 100:.2f}%)",
+                value=value,
                 inline=False,
             )
 
@@ -153,18 +175,49 @@ class TeamControlView(View):
 class MemberRecord:
     def __init__(self, name):
         self.name = name
-        self.win = 0
-        self.num = 0
+        # 人数有利時の成績
+        self.win_adv = 0
+        self.num_adv = 0
+        # 人数不利時の成績
+        self.win_dis = 0
+        self.num_dis = 0
+        # ハンデ無し時の成績
+        self.win_even = 0
+        self.num_even = 0
 
-    def record_win(self):
-        self.win += 1
-        self.num += 1
+    def record_win(self, mode):
+        """
+        mode: 'adv'（人数有利）, 'dis'（人数不利）, その他はハンデ無し
+        """
+        if mode == "adv":
+            self.win_adv += 1
+            self.num_adv += 1
+        elif mode == "dis":
+            self.win_dis += 1
+            self.num_dis += 1
+        else:
+            self.win_even += 1
+            self.num_even += 1
 
-    def record_lose(self):
-        self.num += 1
+    def record_lose(self, mode):
+        if mode == "adv":
+            self.num_adv += 1
+        elif mode == "dis":
+            self.num_dis += 1
+        else:
+            self.num_even += 1
+
+    def total_win(self):
+        return self.win_adv + self.win_dis + self.win_even
+
+    def total_num(self):
+        return self.num_adv + self.num_dis + self.num_even
+
+    def total_rate(self):
+        tn = self.total_num()
+        return (self.total_win() / tn * 100) if tn > 0 else 0.0
 
     def __str__(self):
-        rate = 0.0
-        if self.win != 0:
-            rate = self.win / self.num * 100
-        return f"{self.name}: {self.win}勝/{self.num}試合 (勝率: {rate:.2f}%)"
+        return (
+            f"{self.name}: {self.total_win()}勝/{self.total_num()}試合 (勝率: {self.total_rate():.2f}%)"
+        )

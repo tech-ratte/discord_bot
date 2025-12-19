@@ -164,11 +164,37 @@ class CautionView(View):
             win_members = self.beta
             lose_members = self.alpha
         # レコード更新
+        # 各メンバーの試合モード（人数有利/人数不利/ハンデ無し）を判定して渡す
+        # team sizes を比較してどちらのチームが人数有利か決定
+        alpha_size = len(self.alpha)
+        beta_size = len(self.beta)
+        member_mode = {}
+        # アルファチームのメンバーにモードを割り当て
+        for m in self.alpha:
+            if alpha_size > beta_size:
+                member_mode[m] = "adv"
+            elif alpha_size < beta_size:
+                member_mode[m] = "dis"
+            else:
+                member_mode[m] = "even"
+        # ブラボーチームのメンバーにモードを割り当て
+        for m in self.beta:
+            if beta_size > alpha_size:
+                member_mode[m] = "adv"
+            elif beta_size < alpha_size:
+                member_mode[m] = "dis"
+            else:
+                member_mode[m] = "even"
+        # 観戦者は試合に関与しないためモードは None にしておく（記録対象外）
         for r in self.record:
+            # win
             if r.name in win_members:
-                r.record_win()
+                mode = member_mode.get(r.name, None)
+                r.record_win(mode)
+            # lose
             if r.name in lose_members:
-                r.record_lose()
+                mode = member_mode.get(r.name, None)
+                r.record_lose(mode)
         members = self.alpha + self.beta + self.spec
         team_view = TeamControlView(
             self.weapons, self.start_time, self.count, self.record, members
